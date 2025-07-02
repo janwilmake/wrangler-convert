@@ -1,0 +1,35 @@
+{
+  "name": "wrangler-convert",
+  "version": "1.0.0",
+  "description": "Convert Wrangler config to Cloudflare Worker metadata format",
+  "main": "dist/wrangler-converter.js",
+  "bin": {
+    "wrangler-convert": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "wrangler",
+    "converter"
+  ],
+  "author": "Jan Wilmake",
+  "license": "MIT",
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "dotenv": "^16.3.1",
+    "jsonc-parser": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ]
+}
