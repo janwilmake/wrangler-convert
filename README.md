@@ -7,3 +7,8 @@ Usage
 ```
 npx wrangler-convert
 ```
+
+Sources used:
+
+- https://unpkg.com/wrangler@latest/config-schema.json (Amazing!)
+- https://oapis.org/openapi/cloudflare/worker-script-upload-worker-module
