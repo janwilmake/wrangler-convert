@@ -1,10 +1,21 @@
 Goal: wrangler-compatible workers augmentation
 
-This is a CLI and library that allows easily converting a `wrangler.toml|json|jsonc` and `.dev.vars|.env` into a `metadata.json` file.
-
 # Wrangler Config Converter
 
+This is a CLI and library that allows easily converting a `wrangler.toml|json|jsonc` and `.dev.vars|.env` into a `metadata.json` file.
+
 A utility function to convert Cloudflare Wrangler configuration files (`wrangler.toml`) into the format expected by the Cloudflare Workers API.
+
+Sources used:
+
+- https://unpkg.com/wrangler@latest/config-schema.json (Amazing!)
+- https://oapis.org/openapi/cloudflare/worker-script-upload-worker-module
+
+# Limitations
+
+- Does not take into account environment. Normally workers can have `env: { staging, ... }` but this is now completely ignored
+- Does not take into account that .ts files need to be built into a .js first before upload.
+- See considerations for additional things that need to be done before worker script upload
 
 ## Installation
 
@@ -241,7 +252,41 @@ The converter supports all major Wrangler configuration options:
 }
 ```
 
-Sources used:
+# Considerations
 
-- https://unpkg.com/wrangler@latest/config-schema.json (Amazing!)
-- https://oapis.org/openapi/cloudflare/worker-script-upload-worker-module
+## Files that can be part of a Worker script
+
+The multipart upload accepts these content types:
+
+- `application/javascript+module` / `text/javascript+module` - ES modules
+- `application/javascript` / `text/javascript` - Regular JS files
+- `application/wasm` - WebAssembly modules
+- `text/plain` - Text files
+- `application/octet-stream` - Binary files
+- `application/source-map` - Source maps
+
+## JWT, \_headers, and \_redirects placement
+
+Since you already have the JWT from the asset upload service, here's where each goes:
+
+```json path="metadata-structure.json"
+{
+  "metadata": {
+    "main_module": "worker.js",
+    "compatibility_date": "2023-10-01",
+    "assets": {
+      "jwt": "your-jwt-from-asset-service",
+      "config": {
+        "_headers": "# Headers file content\n/dashboard/*\nX-Frame-Options: DENY\n\n/static/*\nAccess-Control-Allow-Origin: *",
+        "_redirects": "# Redirects file content\n/foo /bar 301\n/news/* /blog/:splat",
+        "html_handling": "auto-trailing-slash",
+        "not_found_handling": "404-page",
+        "run_worker_first": ["/api/*", "/oauth/callback", "!/api/assets/*"]
+      }
+    },
+    "bindings": [
+      // ... your converted bindings
+    ]
+  }
+}
+```
