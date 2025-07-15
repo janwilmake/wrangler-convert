@@ -155,12 +155,16 @@ interface UnsafeConfig {
 }
 
 interface WorkerMetadata {
+  migrations?: {
+    old_tag: string | undefined;
+    new_tag: string;
+    steps: MigrationConfig[];
+  };
   main_module?: string;
   body_part?: string;
   compatibility_date?: string;
   compatibility_flags?: string[];
   bindings?: any[];
-  migrations?: any;
   observability?: ObservabilityConfig;
   placement?: PlacementConfig;
   logpush?: boolean;
@@ -182,13 +186,22 @@ interface ConversionResult {
     zone_id?: string;
     script?: string;
   }>;
+  /** NB: this still must be converted to get something in shape of {old_tag,new_tag,steps} */
+  migrations: MigrationConfig[] | undefined;
   scriptName: string;
   mainModule?: string;
 }
 
+/**
+ * @param config
+ * @param env your environment variables needed
+ * @param migration_tag latest migration tag applied to the worker; can be found using  https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/versions/${latestVersionId}
+ * @returns
+ */
 function convertWranglerToWorkerConfig(
   config: WranglerConfig,
   env: Record<string, string> = {},
+  migration_tag: string | undefined
 ): ConversionResult {
   const bindings: any[] = [];
   const routes: Array<{ pattern: string; zone_id?: string; script?: string }> =
@@ -437,12 +450,23 @@ function convertWranglerToWorkerConfig(
     i++;
   }
 
+  const migrations =
+    config.migrations && config.migrations.length > 0
+      ? {
+          old_tag: migration_tag,
+          new_tag: config.migrations[config.migrations.length - 1]?.tag,
+          steps: config.migrations.filter((item) =>
+            !migration_tag ? true : item.tag > migration_tag
+          ),
+        }
+      : undefined;
+
   // Build metadata
   const metadata: WorkerMetadata = {
+    migrations,
     compatibility_date: config.compatibility_date,
     compatibility_flags: config.compatibility_flags,
     bindings: bindings.length > 0 ? bindings : undefined,
-    migrations: config.migrations?.[0],
     observability: config.observability,
     placement: config.placement,
     logpush: config.logpush,
@@ -468,6 +492,8 @@ function convertWranglerToWorkerConfig(
 
   return {
     metadata,
+    migrations: config.migrations,
+
     routes,
     scriptName: config.name || "worker",
     mainModule: config.main,
