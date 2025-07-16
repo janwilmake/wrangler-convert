@@ -6,6 +6,15 @@ import * as toml from "@iarna/toml";
 import * as dotenv from "dotenv";
 import { parse as parseJsonc } from "jsonc-parser";
 import { convertWranglerToWorkerConfig } from "./wrangler-converter";
+import readline from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
+
+async function promptForMigrationTag(): Promise<string> {
+  const rl = readline.createInterface({ input, output });
+  const answer = await rl.question("Enter migration_tag: ");
+  rl.close();
+  return answer.trim();
+}
 
 function findConfigFile(): string | null {
   const cwd = process.cwd();
@@ -65,14 +74,14 @@ function mergeEnvFiles(): Record<string, string> {
   return merged;
 }
 
-function main() {
+async function main() {
   try {
     console.log("🔍 Looking for Wrangler config...");
 
     const configPath = findConfigFile();
     if (!configPath) {
       console.error(
-        "❌ No wrangler config file found (wrangler.toml, wrangler.json, or wrangler.jsonc)",
+        "❌ No wrangler config file found (wrangler.toml, wrangler.json, or wrangler.jsonc)"
       );
       process.exit(1);
     }
@@ -92,15 +101,17 @@ function main() {
       console.log("📝 No environment files found or empty");
     }
 
+    const migration_tag = await promptForMigrationTag();
+
     console.log("🔄 Converting config...");
-    const result = convertWranglerToWorkerConfig(config, env);
+    const result = convertWranglerToWorkerConfig(config, env, migration_tag);
 
     const outputPath = path.join(process.cwd(), "metadata.json");
     fs.writeFileSync(outputPath, JSON.stringify(result, null, 2));
 
     console.log(`✅ Conversion complete! Output written to ${outputPath}`);
     console.log(
-      `📊 Generated ${result.routes.length} routes for worker "${result.scriptName}"`,
+      `📊 Generated ${result.routes.length} routes for worker "${result.scriptName}"`
     );
 
     if (result.metadata.bindings) {
