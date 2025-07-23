@@ -1,4 +1,4 @@
-interface WranglerConfig {
+export interface WranglerConfig {
   name?: string;
   main?: string;
   compatibility_date?: string;
@@ -154,7 +154,7 @@ interface UnsafeConfig {
   metadata?: Record<string, any>;
 }
 
-interface WorkerMetadata {
+export interface WorkerMetadata {
   migrations?: {
     old_tag: string | undefined;
     new_tag: string;
@@ -170,7 +170,9 @@ interface WorkerMetadata {
   logpush?: boolean;
   usage_model?: string;
   tail_consumers?: TailConsumer[];
+  keep_assets?: boolean;
   assets?: {
+    jwt?: string;
     config?: {
       html_handling?: string;
       not_found_handling?: string;
@@ -179,7 +181,7 @@ interface WorkerMetadata {
   };
 }
 
-interface ConversionResult {
+export interface ConversionResult {
   metadata: WorkerMetadata;
   routes: Array<{
     pattern: string;
@@ -198,7 +200,7 @@ interface ConversionResult {
  * @param migration_tag latest migration tag applied to the worker; can be found using  https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/versions/${latestVersionId}
  * @returns
  */
-function convertWranglerToWorkerConfig(
+export function convertWranglerToWorkerConfig(
   config: WranglerConfig,
   env: Record<string, string> = {},
   migration_tag: string | undefined
@@ -499,6 +501,3 @@ function convertWranglerToWorkerConfig(
     mainModule: config.main,
   };
 }
-
-export { convertWranglerToWorkerConfig };
-export type { WranglerConfig, ConversionResult };
